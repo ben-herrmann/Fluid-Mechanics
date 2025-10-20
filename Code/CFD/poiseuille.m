@@ -1,0 +1,71 @@
+%% Steady
+
+clearvars; close all; clc;
+
+% Parameters
+h = 0.05;        % m
+mu = 8.9*1e-4;   % kg/(m s)
+pgrad = -10;     % Pa/m
+
+% Grid and differentiation matrix
+n = 100;
+y = linspace(-h/2,h/2,n);
+dy = abs(y(2)-y(1));
+D2 = finite_diff_2(n)/dy^2;
+
+% System Aq=b
+A = zeros(n,n);
+b = zeros(n,1);
+A(2:n-1,2:n-1) = D2(2:n-1,2:n-1);
+A(1,1) = 1;
+A(n,n) = 1;
+b(2:n-1) = pgrad/mu;
+
+% Solve
+u_num = A\b;
+u = -pgrad/(2*mu)*(h/2)^2*(1-(2*y/h).^2);
+
+% Plot
+plot(y,u,'k',y,u_num,'ro','LineWidth',1.3), axis tight
+xlabel('$y$','Interpreter','LaTeX','FontSize',18)
+ylabel('$u$','Interpreter','LaTeX','FontSize',18)
+set(gca,'Color','w','FontName','Times','FontSize',18)
+
+%% Unsteady
+
+clearvars; close all; clc;
+
+% Parameters
+h = 0.05;        % m
+mu = 8.9*1e-4;   % kg/(m s)
+rho = 1000;      % kg/m^3
+pgrad = -10;     % Pa/m
+
+% Grid and differentiation matrix
+n = 100;
+y = linspace(-h/2,h/2,n);
+dy = abs(y(2)-y(1));
+D2 = finite_diff_2(n)/dy^2;
+
+% Dynamics qdot = du/dt = -pgrad/rho + mu/rho*D2*u
+f = @(t,u) -pgrad/rho + mu/rho*D2(2:n-1,2:n-1)*u;
+
+% Time discretization
+m = 101;
+tf = 1000;
+t = linspace(0,tf,m);
+
+% Solve
+u0 = zeros(n-2,1);
+[~,u] = ode45(f,t,u0);
+u = u.';
+
+% Animate
+for i=1:m
+    plot(y,[0;u(:,i); 0],'LineWidth',1.3), axis tight
+    ylim([0,3.8])
+    xlabel('$y$','Interpreter','LaTeX','FontSize',18)
+    ylabel('$u$','Interpreter','LaTeX','FontSize',18)
+    set(gca,'Color','w','FontName','Times','FontSize',18)
+    drawnow()
+end
